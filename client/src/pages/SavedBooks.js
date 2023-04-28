@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Card,
@@ -6,23 +6,27 @@ import {
   Row,
   Col
 } from 'react-bootstrap';
-import { useQuery, useMutation } from '@apollo/client';
+
 import { GET_ME } from '../utils/queries';
 import { REMOVE_BOOK } from '../utils/mutations';
+import { useQuery, useMutation } from '@apollo/client';
 import Auth from '../utils/auth';
 import { removeBookId } from '../utils/localStorage';
 
 const SavedBooks = () => {
-  const [userData, setUserData] = useState({});
+  const { loading, data } = useQuery(GET_ME);
 
-  // use this to determine if `useEffect()` hook needs to run again
-  const userDataLength = Object.keys(userData).length;
+  const [removeBook, { error }] = useMutation(REMOVE_BOOK);
 
-  useQuery(GET_ME, {
-    onCompleted: (data) => {
-      setUserData(data.me);
-    },
-  }, [userDataLength]);
+  const userData = data?.me || {};
+
+  if (!userData?.username) {
+    return (
+      <h4>
+        You need to be logged in to see this page. Use the navigation links above to sign up or log in!
+      </h4>
+    );
+  }
 
   // create function that accepts the book's mongo _id value as param and deletes the book from the database
   const handleDeleteBook = async (bookId) => {
@@ -33,27 +37,28 @@ const SavedBooks = () => {
     }
 
     try {
-      const response = await removeBook({
+      await removeBook({
         variables: { bookId },
-      })
-      
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
+        update(cache, { data: { removeBook } }) {
+          try {
+            cache.writeQuery({
+              query: GET_ME,
+              data: { me: removeBook }
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      });
 
-      const updatedUser = await response.json();
-      setUserData(updatedUser);
-      // upon success, remove book's id from localStorage
       removeBookId(bookId);
     } catch (err) {
       console.error(err);
     }
   };
 
-  const [removeBook, { error }] = useMutation(REMOVE_BOOK);
-
   // if data isn't here yet, say so
-  if (!userDataLength) {
+  if (loading) {
     return <h2>LOADING...</h2>;
   }
 
