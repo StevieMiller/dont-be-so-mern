@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Col,
-  Form,
-  Button,
-  Card,
-  Row
-} from 'react-bootstrap';
+import { Container, Col, Form, Button, Card, Row } from 'react-bootstrap';
 
 import Auth from '../utils/auth';
 import { searchGoogleBooks } from '../utils/API';
 import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
-import { SAVE_BOOK } from '../utils/mutations';
 import { useMutation } from '@apollo/client';
+import { SAVE_BOOK } from '../utils/mutations';
 import { GET_ME } from '../utils/queries';
 
 const SearchBooks = () => {
@@ -86,8 +79,8 @@ const SearchBooks = () => {
               query: GET_ME,
               data: { me: saveBook }
             });
-          } catch (e) {
-            console.error(e);
+          } catch (err) {
+            console.error(err);
           }
         }
       });
